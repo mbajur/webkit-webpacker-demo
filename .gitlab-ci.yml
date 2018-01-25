@@ -1,0 +1,55 @@
+# This file is a template, and might need editing before it works on your project.
+# Official docker image.
+image: docker:latest
+
+services:
+  # - docker:dind
+  - postgres:latest
+
+variables:
+  POSTGRES_DB: hydra_test
+
+cache:
+  paths:
+    - vendor/ruby
+    - node_modules
+
+test:
+  # image: timbru31/ruby-node
+  image: circleci/ruby:2.5-node-browsers
+  variables:
+    DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/$POSTGRES_DB"
+  script:
+    # - apt-get update && apt-get -y install build-essential libpq-dev
+    # - firefox --version
+    # - export GECKODRIVER_LATEST_RELEASE_URL=$(curl https://api.github.com/repos/mozilla/geckodriver/releases/latest | jq -r ".assets[] | select(.name | test(\"linux64\")) | .browser_download_url") && curl --silent --show-error --location --fail --retry 3 --output /tmp/geckodriver_linux64.tar.gz "$GECKODRIVER_LATEST_RELEASE_URL" && cd /tmp && tar xf geckodriver_linux64.tar.gz && rm -rf geckodriver_linux64.tar.gz && sudo mv geckodriver /usr/local/bin/geckodriver && sudo chmod +x /usr/local/bin/geckodriver && geckodriver --version && cd /builds/glaze/hydra
+
+    # Instal gecko
+    # - sudo apt-get update && sudo apt-get install -y python-pip python-dev
+    # - pip install mozdownload mozinstall
+    # - mozdownload --version latest --destination firefox.tar.bz2
+    # - mozinstall firefox.tar.bz2
+    # - wget -O geckodriver.tar.gz https://github.com/mozilla/geckodriver/releases/download/v0.18.0/geckodriver-v0.18.0-linux64.tar.gz
+    # - gunzip -c geckodriver.tar.gz | tar xopf -
+    # - chmod +x geckodriver
+    # - mv geckodriver /usr/local/bin/
+    # - geckodriver --version
+
+    # Run specs
+    - sudo apt-get update && sudo apt-get install -y qt5-default libqt5webkit5-dev gstreamer1.0-plugins-base gstreamer1.0-tools gstreamer1.0-x
+    - bundle install -j $(nproc) --path vendor
+    - yarn install
+    - mv config/database.yml config/database.yml.bkp
+    - bundle exec rake db:create || true
+    - bundle exec rake db:schema:load
+    - bundle exec rspec
+    - bundle exec spinach
+
+# build-master:
+#   stage: build
+#   script:
+#     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+#     - docker build --pull -t "$CI_REGISTRY_IMAGE" .
+#     - docker push "$CI_REGISTRY_IMAGE"
+#   only:
+#     - master
